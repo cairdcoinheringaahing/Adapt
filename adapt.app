@@ -19,15 +19,20 @@ L,C		; 18
 L,$		; 19
 L,P		; 20
 
+str:"`"
+unary:"0123456789OocP"
+binary:"+*/-^s"
+indexes:"+*/-^0123456789OocsP"
+
 D,append,
 	@@@*,
 	¿!,@,p{strip}b]+¿
 	@p@
-
+	
 D,arity,
 	@,
 	V
-	"0123456789OocP" "+*/-^s"$b[
+	`unary` `binary`$b[
 	G€Ωe
 	dbUBx$
 	dbLRz€¦*
@@ -60,17 +65,13 @@ D,exec,
 	{pop}
 	bUBZ
 
-D,id,
-	?!,
-	bi
-
 D,if,
 	@@@@,
 	¿!,p{recurse},ppp{end}¿
 
 D,index,
 	@,
-	"+*/-^0123456789OocsP"
+	`indexes`
 	$€=dbLR
 	z€¦*bUM
 
@@ -100,12 +101,12 @@ D,out,
 
 D,parse,
 	@,
-	34C€=
+	`str`€=
 	¬Bx
 	ABcB*B]
 	Δ!€{join}
 	VA
-	34C€=
+	`str`€=
 	¬Bx€!
 	ABcB*B]
 	Δ!€{join}
@@ -129,9 +130,8 @@ D,recurse,
 
 D,strip,
 	@,
-	34C$
+	`str`$
 	ßþ=J
 
 _
-$id>_
 $main>x
