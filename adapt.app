@@ -97,7 +97,7 @@ D,main,
 
 D,out,
 	@@:,
-	¿!,$bR0$:,p¿bU
+	¿!,$bR0$:,p¿
 
 D,parse,
 	@,
