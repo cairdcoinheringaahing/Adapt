@@ -1,137 +1,293 @@
-L#,+		;  1
-L#,*		;  2
-L#,/		;  3
-L#,_		;  4
-L#,^		;  5
-L,c0		;  6
-L,1{integer}	;  7
-L,2{integer}	;  8
-L,3{integer}	;  9
-L,4{integer}	; 10
-L,5{integer}	; 11
-L,6{integer}	; 12
-L,7{integer}	; 13
-L,8{integer}	; 14
-L,9{integer}	; 15
-L,dBh		; 16
-L,O		; 17
-L,C		; 18
-L,$		; 19
-L,P		; 20
+; First, we define the core variables:
+; `code` contains the file, read from the ARGV
+; `input` contains the contents of STDIN
+; `char` is a temp variable for colleting STDIN
+; `str` sets the opening and closing character for strings. At the moment, it is a backtick (`)
+; `radix` is the base for pushing integers
+; `argv` contains the list of ARGV
 
+code:?
+input:""
+char:""
 str:"`"
-unary:"0123456789OocP"
-binary:"+*/-^s"
-indexes:"+*/-^0123456789OocsP"
+radix:10
+argv:_
 
-D,append,
-	@@@*,
-	¿!,@,p{strip}b]+¿
-	@p@
-	
-D,arity,
+; We then define our string variables:
+; `digits` contains the digits from 0 to 9
+; `nilads` contains the niladic (no argument) commands
+; `unary` contains the commands with only 1 argument
+; `dyads` have the commands with 2 arguments
+; `stacks` are the commands that operate only on the stack
+; `cmds` is a collection of `unary` and `dyads`
+
+digits:"1234567890"
+nilads:"@?A!#"
+unary:"POocr"
+dyads:"+*-/^"
+stacks:"s.[~:]"
+cmds:"POocr+*-/^"
+
+; Collect the input, char by char
+
+Dchar,
+	`char,
+	]getchar,
+	`input,
+	+char,
+
+; Take copies of `input` and `argv` in order to iterate over them
+
+charinput:input
+eachargv:argv
+
+; If `code` contains a file name, read the file contents
+; Finally, convert to a string, to avoid examples like "16"
+
+`code
+]read
+]string
+
+;  Twig functions  ;
+; ================ ;
+
+D,global,
 	@,
-	V
-	`unary` `binary`$b[
-	G€Ωe
-	dbUBx$
-	dbLRz€¦*
-	bM*
+	dBk
 
-D,behead,
+D,list,
+	@*,
+	bU
+
+D,string,
 	@,
-	BP
+	`str`$+
 
-D,call,
-	@@@*,
-	d!Q
-	$b[VbRbUGbU
-	B {lambda}
-	V@GB]
-
-D,end,
-	@,
-	dd{join}=
-	{out}
-
-D,exec,
+D,take,
 	@@,
-	dbL1$>dV
-	{append}
-	bU$G!*dV
-	d{index}
-	${arity}
-	G"."=
-	{pop}
-	bUBZ
+	$bU@B
 
-D,if,
-	@@@@,
-	¿!,p{recurse},ppp{end}¿
-
-D,index,
-	@,
-	`indexes`
-	$€=dbLR
-	z€¦*bUM
-
-D,integer,
+D,pop,
 	@@#,
-	10*+
+	dbL$@$_0<
+	Ap*0b]*+dVAp
+	{take}GApGbL$
+	_$bR${take}b[
 
-D,join,
+; ================ ;
+
+;  Nilad commands  ;
+; ================ ;
+
+D,niladat,
+	@,
+	0b]+
+
+D,niladarg,
+	@,
+	`eachargv`BP
+	`eachargv`0$:
+	$Vb]+G
+	"eachargv"U
+
+D,niladargv,
+	@,
+	`argv`b]+
+
+D,niladchar,
+	@,
+	`charinput`BP
+	`charinput`0$:
+	$Vb]+G
+	"charinput"U
+
+D,niladinput,
+	@,
+	`input`b]+
+
+; ================ ;
+
+;  Stack commands  ;
+; ================ ;
+
+D,stackswap,
+	@,
+	2{pop}bU+
+
+D,stackdup,
+	@,
+	d1{pop}bU$p+
+
+D,stackwrap,
+	@!,
+
+D,stackpop,
+	@,
+	1{pop}bUp
+
+D,stackrev,
+	@,
+	bR
+
+D,stacksplat,
 	@~,
-	J
 
-D,lambda,
+; ================ ;
+
+;     Commands     ;
+; ================ ;
+
+D,prime,
+	@,
+	1{pop}bUbU
+	P
+	b]+
+
+D,output,
+	@,
+	1{pop}bUbU
+	dBhA
+
+D,ord,
+	@,
+	1{pop}bUbU
+	O
+	b]+
+
+D,char,
+	@,
+	1{pop}bUbU
+	C
+	b]+
+
+D,setradix,
+	@,
+	1{pop}bUbU
+	"radix"U
+
+D,plus,
+	@,
+	2{pop}bUbU
+	+
+	b]+
+
+D,mul,
+	@,
+	2{pop}bUbU
+	*
+	b]+
+
+D,sub,
+	@,
+	2{pop}bUbU
+	_
+	b]+
+
+D,div,
+	@,
+	2{pop}bUbU
+	/
+	b]+
+
+D,pow,
+	@,
+	2{pop}bUbU
+	^
+	b]+
+
+; ================ ;
+
+; Branch functions ;
+; ================ ;
+
+D,pinteger,
 	@@,
-	$VbUG
-	]
+	i$1{pop}bUbU@$
+	@`radix`*+b]+
 
-D,main,
-	@~,
-	@VB]G
-	{parse}
-	dbLR1€Ω_
-	{recurse}
+D,pstring,
+	@@,
+	$VBPb]G$+
 
-D,out,
-	@@:,
-	¿!,$bR0$:,p¿
+D,pnilad,
+	@@,
+	`nilads`$€=
+	dbLRz£*bMb[V
+	`$niladat`
+	`$niladarg`
+	`$niladargv`
+	`$niladchar`
+	`$niladinput`
+	B]GbUV@G@1_
+	$:$b]$~
+
+D,command,
+	@@,
+	`cmds`$€=
+	dbLRz£*bM1_
+	`$prime`	b]
+	`$output`	b]+
+	`$ord`		b]+
+	`$char`		b]+
+	`$setradix`	b]+
+	`$plus`		b]+
+	`$mul`		b]+
+	`$sub`		b]+
+	`$div`		b]+
+	`$pow`		b]+
+	:$b]$~
+
+D,stackcmd,
+	@@,
+	`stacks`$€=
+	dbLRz£*bM1_
+	`$stackswap`	b]
+	`$stackdup`	b]+
+	`$stackwrap`	b]+
+	`$stackpop`	b]+
+	`$stackrev`	b]+
+	`$stacksplat`	b]+
+	:$b]$~
+
+; ================ ;
+
+; Trunk functions  ;
+; ================ ;
 
 D,parse,
 	@,
-	`str`€=
-	¬Bx
-	ABcB*B]
-	Δ!€{join}
-	VA
-	`str`€=
-	¬Bx€!
-	ABcB*B]
-	Δ!€{join}
-	€{strip}
-	GBcB]
-	£o
+	`str`$t
+	dbL2%`str`b]*+
+	2$TbUBc
+	€{string}$€{list}
+	zBFB]`str`d+$þ=þ!
+	10C$þ=
 
-D,pop,
-	@@@@,
-	¿!,p{call},@VcGBp¿
-
-D,recurse,
-	@@@,
-	dbm$
-	{behead}
-	V@G@$:
-	{exec}
-	Ap$p$@
-	dbL!
-	{if}
-
-D,strip,
+D,exec,
 	@,
-	`str`$
-	ßþ=J
+	d0$:`str`=$
+	d`digits`€e¦*$
+	d`nilads`€e¦*$
+	d`cmds`  €e¦*$
+	d`stacks`€e¦*$
+	pB]dbLRz£*bMV
+	`$pstring`
+	`$pinteger`
+	`$pnilad`
+	`$command`
+	`$stackcmd`
+	B]G1_$:ABKb[$~
+	d{global}p
 
-_
-$main>x
+D,main,
+	@:,
+	{parse}
+	€{exec}
+	-1$:bUn
+
+; =============== ;
+
+`x
+$global>[0]
+`code
+$main>code
