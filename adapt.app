@@ -24,9 +24,10 @@ argv:_
 digits:"1234567890"
 nilads:"@?A!#"
 unary:"POocr"
-dyads:"+*-/^"
-stacks:"s.[~:]"
-cmds:"POocr+*-/^"
+dyads:"+*-/^%"
+stacks:"s.[~:]R"
+cmds:"POocr+*-/^%"
+chars:"1234567890POocr+*-/^%s.[~:]R@?A!#`"
 
 ; Collect the input, char by char
 
@@ -73,6 +74,10 @@ D,pop,
 	Ap*0b]*+dVAp
 	{take}GApGbL$
 	_$bR${take}b[
+	
+D,filter,
+	@,
+	0$:`chars`$e
 
 ; ================ ;
 
@@ -80,29 +85,29 @@ D,pop,
 ; ================ ;
 
 D,niladat,
-	@,
+	@*,
 	0b]+
 
 D,niladarg,
-	@,
+	@*,
 	`eachargv`BP
 	`eachargv`0$:
 	$Vb]+G
 	"eachargv"U
 
 D,niladargv,
-	@,
+	@*,
 	`argv`b]+
 
 D,niladchar,
-	@,
+	@*,
 	`charinput`BP
 	`charinput`0$:
 	$Vb]+G
 	"charinput"U
 
 D,niladinput,
-	@,
+	@*,
 	`input`b]+
 
 ; ================ ;
@@ -111,26 +116,31 @@ D,niladinput,
 ; ================ ;
 
 D,stackswap,
-	@,
+	@*,
 	2{pop}bU+
 
 D,stackdup,
-	@,
+	@*,
 	d1{pop}bU$p+
 
 D,stackwrap,
-	@!,
+	@*!,
 
 D,stackpop,
-	@,
+	@*,
 	1{pop}bUp
 
 D,stackrev,
-	@,
+	@*,
 	bR
 
 D,stacksplat,
-	@~,
+	@*~,
+	
+D,stackrot,
+	@*,
+	3{pop}bUbR
+	1{pop}bU$++
 
 ; ================ ;
 
@@ -138,61 +148,67 @@ D,stacksplat,
 ; ================ ;
 
 D,prime,
-	@,
+	@*,
 	1{pop}bUbU
 	P
 	b]+
 
 D,output,
-	@,
+	@*,
 	1{pop}bUbU
 	dBhA
 
 D,ord,
-	@,
+	@*,
 	1{pop}bUbU
-	O
-	b]+
+	€O
+	+
 
 D,char,
-	@,
+	@*,
 	1{pop}bUbU
 	C
 	b]+
 
 D,setradix,
-	@,
+	@*,
 	1{pop}bUbU
 	"radix"U
 
 D,plus,
-	@,
+	@*,
 	2{pop}bUbU
 	+
 	b]+
 
 D,mul,
-	@,
+	@*,
 	2{pop}bUbU
 	*
 	b]+
 
 D,sub,
-	@,
+	@*,
 	2{pop}bUbU
 	_
 	b]+
 
 D,div,
-	@,
+	@*,
 	2{pop}bUbU
 	/
 	b]+
 
 D,pow,
-	@,
+	@*,
 	2{pop}bUbU
 	^
+	b]+
+	
+D,mod,
+	@*,
+	2{pop}bUbU
+	%
 	b]+
 
 ; ================ ;
@@ -201,16 +217,16 @@ D,pow,
 ; ================ ;
 
 D,pinteger,
-	@@,
+	@@*,
 	i$1{pop}bUbU@$
 	@`radix`*+b]+
 
 D,pstring,
-	@@,
+	@@*,
 	$VBPb]G$+
 
 D,pnilad,
-	@@,
+	@@*,
 	`nilads`$€=
 	dbLRz£*bMb[V
 	`$niladat`
@@ -222,7 +238,7 @@ D,pnilad,
 	$:$b]$~
 
 D,command,
-	@@,
+	@@*,
 	`cmds`$€=
 	dbLRz£*bM1_
 	`$prime`	b]
@@ -235,18 +251,20 @@ D,command,
 	`$sub`		b]+
 	`$div`		b]+
 	`$pow`		b]+
+	`$mod`		b]+
 	:$b]$~
 
 D,stackcmd,
-	@@,
+	@@*,
 	`stacks`$€=
 	dbLRz£*bM1_
 	`$stackswap`	b]
-	`$stackdup`	b]+
+	`$stackdup`		b]+
 	`$stackwrap`	b]+
-	`$stackpop`	b]+
-	`$stackrev`	b]+
+	`$stackpop`		b]+
+	`$stackrev`		b]+
 	`$stacksplat`	b]+
+	`$stackrot`		b]+
 	:$b]$~
 
 ; ================ ;
@@ -261,7 +279,7 @@ D,parse,
 	2$TbUBc
 	€{string}$€{list}
 	zBFB]`str`d+$þ=þ!
-	10C$þ=
+	Þ{filter}
 
 D,exec,
 	@,
@@ -278,12 +296,13 @@ D,exec,
 	`$stackcmd`
 	B]G1_$:ABKb[$~
 	d{global}p
+	;h
 
 D,main,
 	@:,
 	{parse}
 	€{exec}
-	-1$:bUn
+	bUVcGbUn
 
 ; =============== ;
 
