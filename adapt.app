@@ -1,11 +1,3 @@
-; First, we define the core variables:
-; `code` contains the file, read from the ARGV
-; `input` contains the contents of STDIN
-; `char` is a temp variable for colleting STDIN
-; `str` sets the opening and closing character for strings. At the moment, it is a backtick (`)
-; `radix` is the base for pushing integers
-; `argv` contains the list of ARGV
-
 code:?
 input:""
 char:""
@@ -13,44 +5,254 @@ str:"`"
 radix:10
 argv:_
 
-; We then define our string variables:
-; `digits` contains the digits from 0 to 9
-; `nilads` contains the niladic (no argument) commands
-; `unary` contains the commands with only 1 argument
-; `dyads` have the commands with 2 arguments
-; `stacks` are the commands that operate only on the stack
-; `cmds` is a collection of `unary` and `dyads`
+; Commands:
+;
+; @ - Push 0
+; ? - Push the next arg
+; A - Push all args
+; ! - Push the next input char
+; # - Push all input
+; a - Push each arg
+;
+; P - Prime test
+; O - Output
+; o - Ord
+; c - Char
+; r - Set radix
+; i - Integer
+; ' - String
+;
+; + - addition
+; * - multiply
+; - - subtract
+; / - divide
+; ^ - exponent
+; % - modulo
+;
+; s - Swap
+; . - Duplicate
+; [ - Wrap
+; ~ - Pop
+; : - Reverse
+; ] - Splat
+; R - Rotate
 
 digits:"1234567890"
-nilads:"@?A!#"
-unary:"POocr"
+nilads:"@?A!#a"
+unary:"POocri'"
 dyads:"+*-/^%"
 stacks:"s.[~:]R"
-cmds:"POocr+*-/^%"
-chars:"1234567890POocr+*-/^%s.[~:]R@?A!#`"
-
-; Collect the input, char by char
+cmds:"POocri+*-/^%"
+chars:"1234567890POocri'+*-/^%s.[~:]R@?A!#`a"
 
 Dchar,
 	`char,
 	]getchar,
 	`input,
-	+char,
+	+char
 
-; Take copies of `input` and `argv` in order to iterate over them
+constargv:argv
+constinput:input
 
-charinput:input
-eachargv:argv
+; === Nilad functions === ;
 
-; If `code` contains a file name, read the file contents
-; Finally, convert to a string, to avoid examples like "16"
+D,niladat,
+	@,
 
-`code
-]read
-]string
+D,niladarg,
+	@,
+	p`argv`
+	d0$:VBPG
+	b]+"argv"UG
 
-;  Twig functions  ;
-; ================ ;
+D,niladargs,
+	@*,
+	p`constargv`
+
+D,niladchar,
+	@,
+	p`input`
+	d0$:VBPG
+	+"input"UG
+
+D,niladinput,
+	@,
+	p`constinput`
+
+D,niladunargs,
+	@,
+	p`constargv`
+
+; === Unary functions === ;
+
+D,unaryprime,
+	@,
+	P
+
+D,unaryout,
+	@,
+	dBh
+
+D,unaryord,
+	@,
+	O
+
+D,unarychar,
+	@,
+	C
+
+D,unaryradix,
+	@,
+	d"radix"U
+
+D,unaryint,
+	@,
+	i
+
+D,unarystr,
+	@,
+	J
+
+; === Dyad functions === ;
+
+D,dyadadd,
+	@@,
+	+
+
+D,dyadmul,
+	@@,
+	*
+
+D,dyadsub,
+	@@,
+	_
+
+D,dyaddiv,
+	@@,
+	/
+
+D,dyadexp,
+	@@,
+	^
+
+D,dyadmod,
+	@@,
+	%
+
+; === Stack functions === ;
+
+D,stackswap,
+	@*,
+	2{pop}
+	bU+
+
+D,stackdup,
+	@*,
+	d1{pop}
+	bU$p+
+
+D,stackwrap,
+	@*,
+	b]
+
+D,stackpop,
+	@~*,
+	pB]
+
+D,stackrev,
+	@*,
+	bR
+
+D,stacksplat,
+	@*,
+	1{pop}bUbU+
+
+D,stackrot,
+	@*,
+	1{pop}bU$+
+
+; === Switch functions === ;
+
+D,pushstring,
+	@,
+	BPb]BK$+
+	{global}
+
+D,pushdigit,
+	@,
+	iBK1{pop}bU
+	@V@bUi`radix`
+	*G+b]+
+	{global}
+
+D,pushnilad,
+	@,
+	`nilads`$€=
+	dbL1_0rBcB*
+	BZ0B]bMV
+	`$niladat`
+	`$niladarg`
+	`$niladargs`
+	`$niladchar`
+	`$niladinput`
+	`$niladunargs`
+	B]G$:0$~
+	B]BK$+
+	{global}
+
+D,rununary,
+	@,
+	`unary`$€=
+	dbL1_0rBcB*
+	BZ0B]bMV
+	`$unaryprime`
+	`$unaryout`
+	`$unaryord`
+	`$unarychar`
+	`$unaryradix`
+	`$unaryint`
+	`$unarystr`
+	B]G$:BK
+	1{pop}bUbR
+	$V$~b]G$+
+	{global}
+
+D,rundyad,
+	@,
+	`dyads`$€=
+	dbL1_0rBcB*
+	BZ0B]bMV
+	`$dyadadd`
+	`$dyadmul`
+	`$dyadsub`
+	`$dyaddiv`
+	`$dyadexp`
+	`$dyadmod`
+	B]G$:BK
+	2{pop}bUbR
+	$V$~b]G$+
+	{global}
+
+D,runstack,
+	@,
+	`stacks`$€=
+	dbL1_0rBcB*
+	BZ0B]bMV
+	`$stackswap`
+	`$stackdup`
+	`$stackwrap`
+	`$stackpop`
+	`$stackrev`
+	`$stacksplat`
+	`$stackrot`
+	B]G$:BKb]$~
+	{global}
+
+; === Helper functions === ;
+
+D,dequeue,
+	@~,
+	@p@B]
 
 D,global,
 	@,
@@ -79,198 +281,18 @@ D,filter,
 	@,
 	0$:`chars`$e
 
-; ================ ;
+D,getswitchcmd,
+	@,
+	1_V
+	`$pushstring`
+	`$pushdigit`
+	`$pushnilad`
+	`$rununary`
+	`$rundyad`
+	`$runstack`
+	B]G$:
 
-;  Nilad commands  ;
-; ================ ;
-
-D,niladat,
-	@*,
-	0b]+
-
-D,niladarg,
-	@*,
-	`eachargv`BP
-	`eachargv`0$:
-	$Vb]+G
-	"eachargv"U
-
-D,niladargv,
-	@*,
-	`argv`b]+
-
-D,niladchar,
-	@*,
-	`charinput`BP
-	`charinput`0$:
-	$Vb]+G
-	"charinput"U
-
-D,niladinput,
-	@*,
-	`input`b]+
-
-; ================ ;
-
-;  Stack commands  ;
-; ================ ;
-
-D,stackswap,
-	@*,
-	2{pop}bU+
-
-D,stackdup,
-	@*,
-	d1{pop}bU$p+
-
-D,stackwrap,
-	@*!,
-
-D,stackpop,
-	@*,
-	1{pop}bUp
-
-D,stackrev,
-	@*,
-	bR
-
-D,stacksplat,
-	@*~,
-	
-D,stackrot,
-	@*,
-	3{pop}bUbR
-	1{pop}bU$++
-
-; ================ ;
-
-;     Commands     ;
-; ================ ;
-
-D,prime,
-	@*,
-	1{pop}bUbU
-	P
-	b]+
-
-D,output,
-	@*,
-	1{pop}bUbU
-	dBhA
-
-D,ord,
-	@*,
-	1{pop}bUbU
-	€O
-	+
-
-D,char,
-	@*,
-	1{pop}bUbU
-	C
-	b]+
-
-D,setradix,
-	@*,
-	1{pop}bUbU
-	"radix"U
-
-D,plus,
-	@*,
-	2{pop}bUbU
-	+
-	b]+
-
-D,mul,
-	@*,
-	2{pop}bUbU
-	*
-	b]+
-
-D,sub,
-	@*,
-	2{pop}bUbU
-	_
-	b]+
-
-D,div,
-	@*,
-	2{pop}bUbU
-	/
-	b]+
-
-D,pow,
-	@*,
-	2{pop}bUbU
-	^
-	b]+
-	
-D,mod,
-	@*,
-	2{pop}bUbU
-	%
-	b]+
-
-; ================ ;
-
-; Branch functions ;
-; ================ ;
-
-D,pinteger,
-	@@*,
-	i$1{pop}bUbU@$
-	@`radix`*+b]+
-
-D,pstring,
-	@@*,
-	$VBPb]G$+
-
-D,pnilad,
-	@@*,
-	`nilads`$€=
-	dbLRz£*bMb[V
-	`$niladat`
-	`$niladarg`
-	`$niladargv`
-	`$niladchar`
-	`$niladinput`
-	B]GbUV@G@1_
-	$:$b]$~
-
-D,command,
-	@@*,
-	`cmds`$€=
-	dbLRz£*bM1_
-	`$prime`	b]
-	`$output`	b]+
-	`$ord`		b]+
-	`$char`		b]+
-	`$setradix`	b]+
-	`$plus`		b]+
-	`$mul`		b]+
-	`$sub`		b]+
-	`$div`		b]+
-	`$pow`		b]+
-	`$mod`		b]+
-	:$b]$~
-
-D,stackcmd,
-	@@*,
-	`stacks`$€=
-	dbLRz£*bM1_
-	`$stackswap`	b]
-	`$stackdup`		b]+
-	`$stackwrap`	b]+
-	`$stackpop`		b]+
-	`$stackrev`		b]+
-	`$stacksplat`	b]+
-	`$stackrot`		b]+
-	:$b]$~
-
-; ================ ;
-
-; Trunk functions  ;
-; ================ ;
+; === Main functions === ;
 
 D,parse,
 	@,
@@ -283,30 +305,30 @@ D,parse,
 
 D,exec,
 	@,
-	d0$:`str`=$
-	d`digits`€e¦*$
-	d`nilads`€e¦*$
-	d`cmds`  €e¦*$
-	d`stacks`€e¦*$
-	pB]dbLRz£*bMV
-	`$pstring`
-	`$pinteger`
-	`$pnilad`
-	`$command`
-	`$stackcmd`
-	B]G1_$:ABKb[$~
-	d{global}p
-	;h
+	d0$:`str`=
+	$d`digits`$e2*
+	$d`nilads`$e3*
+	$d`unary` $e4*
+	$d`dyads` $e5*
+	$d`stacks`$e6*
+	$BZb]${getswitchcmd}~
 
 D,main,
 	@:,
 	{parse}
 	€{exec}
-	bUVcGbUn
+	pBKA
+	"O"e!*
+	BZbUn
 
-; =============== ;
+; === Main code === ;
 
-`x
-$global>[0]
-`code
+$global>[]
+
+`argv
+$dequeue>argv
+
+`constargv
+$dequeue>constargv
+
 $main>code
